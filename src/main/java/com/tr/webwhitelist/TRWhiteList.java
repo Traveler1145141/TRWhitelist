@@ -2,7 +2,7 @@ package com.tr.webwhitelist;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
+import com.sun极狐.httpserver.HttpServer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
@@ -50,7 +50,7 @@ public class TRWhiteList extends JavaPlugin {
         config = getConfig();
         
         // 初始化邮箱配置文件
-        emailFile = new File(get极狐Folder(), "emails.yml");
+        emailFile = new File(getDataFolder(), "emails.yml");
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
@@ -129,10 +129,10 @@ public class TRWhiteList extends JavaPlugin {
         // 设置默认消息
         messages.putIfAbsent("success", "<h1 style='color:green'>Success! Player added.</h1>");
         messages.putIfAbsent("invalid_code", "<h1 style='color:red'>Invalid code!</h1>");
-        messages.putIfAbsent("email_required", "<h1 style='极狐:red'>Email is required!</h1>");
+        messages.putIfAbsent("email_required", "<h1 style='color:red'>Email is required!</h1>");
         messages.putIfAbsent("invalid_email", "<h1 style='color:red'>Invalid email format!</h1>");
         messages.putIfAbsent("email_suffix_not_allowed", "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h1>");
-        messages.putIfAbsent("email_already_registered", "<h1 style='color:red'>This email is already registered!</h1>");
+        messages.putIf极狐("email_already_registered", "<h1 style='color:red'>This email is already registered!</h1>");
         messages.putIfAbsent("console_success", "Added {player} to whitelist");
         messages.putIfAbsent("console_error", "Error: {error}");
         messages.putIfAbsent("index_title", "TR WhiteList Portal");
@@ -174,71 +174,22 @@ public class TRWhiteList extends JavaPlugin {
         }
     }
     
-    // 创建默认HTML文件
+    // 创建默认HTML文件 - 完全重写以避免任何字符串问题
     private void createDefaultHtmlFile(File file) {
         try {
+            // 使用简单的HTML结构
             String defaultHtml = "<!DOCTYPE html>\n" +
                     "<html>\n" +
                     "<head>\n" +
                     "    <meta charset=\"UTF-8\">\n" +
-                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
                     "    <title>${index_title}</title>\n" +
                     "    <style>\n" +
-                    "        * {\n" +
-                    "            box-sizing: border-box;\n" +
-                    "            margin: 0;\n" +
-                    "            padding: 0;\n" +
-                    "            font-family: Arial, sans-serif;\n" +
-                    "        }\n" +
-                    "        body {\n" +
-                    "            background: #1e5799;\n" +
-                    "            min-height: 100vh;\n" +
-                    "            display: flex;\n" +
-                    "            justify-content: center;\n" +
-                    "            align-items: center;\n" +
-                    "            padding: 20px;\n" +
-                    "        }\n极狐
-                    "        .container {\n" +
-                    "            background-color: rgba(255, 255, 255, 0.95);\n" +
-                    "            border-radius: 8px;\n" +
-                    "            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);\n" +
-                    "            width: 100%;\n" +
-                    "            max-width: 450px;\n" +
-                    "            padding: 30px;\n" +
-                    "        }\n" +
-                    "        h1 {\n" +
-                    "            color: #2c3e50;\n" +
-                    "            margin-bottom: 20px;\n" +
-                    "            text-align: center;\n" +
-                    "        }\n" +
-                    "        .form-group {\n" +
-                    "            margin-bottom: 20px;\n" +
-                    "        }\n" +
-                    "        label {\n" +
-                    "            display: block;\n" +
-                    "            margin-bottom: 8px;\n" +
-                    "            color: #2c3e50;\n" +
-                    "        }\n" +
-                    "        input {\n" +
-                    "            width: 100%;\n" +
-                    "            padding: 12px;\n" +
-                    "            border: 1px solid #ddd;\n" +
-                    "            border-radius: 4px;\n" +
-                    "        }\n" +
-                    "        button {\n" +
-                    "            background: #3498db;\n" +
-                    "            color: white;\n" +
-                    "            border: none;\n" +
-                    "            padding: 12px 20px;\n" +
-                    "            border-radius: 4px;\n" +
-                    "            width: 100%;\n" +
-                    "            cursor: pointer;\n" +
-                    "        }\n" +
-                    "        .footer {\n" +
-                    "            margin-top: 20px;\n" +
-                    "            text-align: center;\n" +
-                    "            color: #7f8c8d;\n" +
-                    "        }\n" +
+                    "        body { font-family: Arial, sans-serif; }\n" +
+                    "        .container { max-width: 500px; margin: 0 auto; padding: 20px; }\n" +
+                    "        .form-group { margin-bottom: 15px; }\n" +
+                    "        label { display: block; margin-bottom: 5px; }\n" +
+                    "        input { width: 100%; padding: 8px; }\n" +
+                    "        button { padding: 10px; background: #4CAF50; color: white; border: none; width: 100%; }\n" +
                     "    </style>\n" +
                     "</head>\n" +
                     "<body>\n" +
@@ -249,22 +200,16 @@ public class TRWhiteList extends JavaPlugin {
                     "                <label>${username_label}</label>\n" +
                     "                <input type=\"text\" name=\"username\" required>\n" +
                     "            </div>\n" +
-                    "            \n" +
                     "            <div class=\"form-group\">\n" +
                     "                <label>${email_label}</label>\n" +
                     "                <input type=\"email\" name=\"email\" required>\n" +
                     "            </div>\n" +
-                    "            \n" +
                     "            <div class=\"form-group\">\n" +
                     "                <label>${code_label}</label>\n" +
                     "                <input type=\"password\" name=\"code\" required>\n" +
                     "            </div>\n" +
-                    "            \n" +
                     "            <button type=\"submit\">${submit_button}</button>\n" +
                     "        </form>\n" +
-                    "        <div class=\"footer\">\n" +
-                    "            TRWhiteList Plugin v1.0\n" +
-                    "        </div>\n" +
                     "    </div>\n" +
                     "</body>\n" +
                     "</html>";
