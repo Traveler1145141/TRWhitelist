@@ -14,6 +14,9 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import javax.mail.*;
+import javax.mail.internet.InternetAddress;
+import javax.mail.internet.MimeMessage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -22,16 +25,20 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 public class TRWhiteList extends JavaPlugin {
+
+    // 存储验证码和过期时间（邮箱 -> 验证码和过期时间）
+    private ConcurrentHashMap<String, CodeInfo> verificationCodes = new ConcurrentHashMap<>();
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
     private HttpServer webServer;
     private String verificationCode;
     private Map<String, String> messages = new HashMap<>();
@@ -48,24 +55,24 @@ public class TRWhiteList extends JavaPlugin {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
         }
-        
+
         // 初始化配置文件
         saveDefaultConfig();
         config = getConfig();
-        
+
         // 初始化邮箱配置文件
         emailFile = new File(getDataFolder(), "emails.yml");
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
         emailConfig = YamlConfiguration.loadConfiguration(emailFile);
-        
+
         // 确保资源文件存在
         ensureResourceFiles();
-        
+
         // 初始化配置
         reloadConfig();
-        
+
         try {
             startWebServer();
             getLogger().info("Web server started on port " + port);
@@ -74,10 +81,16 @@ public class TRWhiteList extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        
+
         // 注册命令
         registerCommand("trwl-reload", new ReloadCommand());
         registerCommand("trwl-clear-emails", new ClearEmailsCommand());
+
+        // 启动定时任务清理过期的验证码
+        scheduler.scheduleAtFixedRate(() -> {
+            long now = System.currentTimeMillis();
+            verificationCodes.entrySet().removeIf(entry -> entry.getValue().isExpired(now));
+        }, 1, 1, TimeUnit.MINUTES);
     }
 
     private void registerCommand(String commandName, CommandExecutor executor) {
@@ -96,7 +109,7 @@ public class TRWhiteList extends JavaPlugin {
                 sender.sendMessage("§cYou don't have permission!");
                 return true;
             }
-            
+
             reloadConfig();
             restartWebServer();
             sender.sendMessage("§aConfiguration reloaded and web server restarted!");
@@ -111,7 +124,7 @@ public class TRWhiteList extends JavaPlugin {
                 sender.sendMessage("§cYou don't have permission!");
                 return true;
             }
-            
+
             registeredEmails.clear();
             saveEmailConfig();
             sender.sendMessage("§aEmail registry cleared!");
@@ -123,22 +136,23 @@ public class TRWhiteList extends JavaPlugin {
     public void onDisable() {
         stopWebServer();
         saveEmailConfig();
+        scheduler.shutdown();
     }
 
     @Override
     public void reloadConfig() {
         super.reloadConfig();
         config = getConfig();
-        
+
         // 加载端口
         port = config.getInt("port", 11434);
-        
+
         // 加载验证码
         verificationCode = config.getString("verification-code", "default");
-        
+
         // 加载允许的邮箱后缀
         allowedEmailSuffixes = config.getStringList("allowed-email-suffixes");
-        
+
         // 加载消息
         messages.clear();
         if (config.isConfigurationSection("messages")) {
@@ -146,7 +160,7 @@ public class TRWhiteList extends JavaPlugin {
                 messages.put(key, config.getString("messages." + key, ""));
             });
         }
-        
+
         // 设置默认消息
         messages.putIfAbsent("success", "<h1 style='color:green'>Success! Player added.</h1>");
         messages.putIfAbsent("invalid_code", "<h1 style='color:red'>Invalid code!</h1>");
@@ -161,7 +175,7 @@ public class TRWhiteList extends JavaPlugin {
         messages.putIfAbsent("email_label", "Email Address");
         messages.putIfAbsent("code_label", "Verification Code");
         messages.putIfAbsent("submit_button", "Add to Whitelist");
-        
+
         // 加载已注册邮箱
         loadEmailConfig();
     }
@@ -173,12 +187,12 @@ public class TRWhiteList extends JavaPlugin {
         if (!configFile.exists()) {
             saveResource("config.yml", false);
         }
-        
+
         // 确保邮箱配置文件存在
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
-        
+
         // 确保HTML文件存在
         File htmlFile = new File(getDataFolder(), "index.html");
         if (!htmlFile.exists()) {
@@ -194,7 +208,7 @@ public class TRWhiteList extends JavaPlugin {
             }
         }
     }
-    
+
     // 创建默认HTML文件
     private void createDefaultHtmlFile(File file) {
         try {
@@ -203,14 +217,64 @@ public class TRWhiteList extends JavaPlugin {
                     "<html>\n" +
                     "<head>\n" +
                     "    <meta charset=\"UTF-8\">\n" +
+                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
                     "    <title>${index_title}</title>\n" +
                     "    <style>\n" +
-                    "        body { font-family: Arial, sans-serif; padding: 20px; }\n" +
-                    "        .container { max-width: 500px; margin: 0 auto; padding: 20px; background: #f8f8f8; border-radius: 8px; }\n" +
-                    "        .form-group { margin-bottom: 15px; }\n" +
-                    "        label { display: block; margin-bottom: 5px; }\n" +
-                    "        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }\n" +
-                    "        button { padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; }\n" +
+                    "        * {\n" +
+                    "            box-sizing: border-box;\n" +
+                    "            margin: 0;\n" +
+                    "            padding: 0;\n" +
+                    "            font-family: Arial, sans-serif;\n" +
+                    "        }\n" +
+                    "        body {\n" +
+                    "            background: #1e5799;\n" +
+                    "            min-height: 100vh;\n" +
+                    "            display: flex;\n" +
+                    "            justify-content: center;\n" +
+                    "            align-items: center;\n" +
+                    "            padding: 20px;\n" +
+                    "        }\n" +
+                    "        .container {\n" +
+                    "            background-color: rgba(255, 255, 255, 0.95);\n" +
+                    "            border-radius: 8px;\n" +
+                    "            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);\n" +
+                    "            width: 100%;\n" +
+                    "            max-width: 450px;\n" +
+                    "            padding: 30px;\n" +
+                    "        }\n" +
+                    "        h1 {\n" +
+                    "            color: #2c3e50;\
+                    "            margin-bottom: 20px;\n" +
+                    "            text-align: center;\n" +
+                    "        }\n" +
+                    "        .form-group {\n" +
+                    "            margin-bottom: 20px;\n" +
+                    "        }\n" +
+                    "        label {\n" +
+                    "            display: block;\n" +
+                    "            margin-bottom: 8px;\n" +
+                    "            color: #2c3e50;\n" +
+                    "        }\n" +
+                    "        input {\n" +
+                    "            width: 100%;\n" +
+                    "            padding: 12px;\n" +
+                    "            border: 1 solid #ddd;\n" +
+                    "            border-radius: 4px;\n" +
+                    "        }\n" +
+                    "        button {\n" +
+                    "            background: #3498db;\n" +
+                    "            color: white;\n" +
+                    "            border: none;\n" +
+                    "            padding: 12px 20px;\n" +
+                    "            border-radius: 4px;\n" +
+                    "            width: 100%;\n" +
+                    "            cursor: pointer;\n" +
+                    "        }\n" +
+                    "        .footer {\n" +
+                    "            margin-top: 20px;\n" +
+                    "            text-align: center;\n" +
+                    "            color: #7f8c8d;\n" +
+                    "        }\n" +
                     "    </style>\n" +
                     "</head>\n" +
                     "<body>\n" +
@@ -219,22 +283,28 @@ public class TRWhiteList extends JavaPlugin {
                     "        <form method=\"POST\">\n" +
                     "            <div class=\"form-group\">\n" +
                     "                <label>${username_label}</label>\n" +
-                    "                <input type=\"text\" name=\"username\" required>\n" +
+                    "                <input type=\"text\" id=\"username\" name=\"username\" required>\n" +
                     "            </div>\n" +
+                    "            \n" +
                     "            <div class=\"form-group\">\n" +
                     "                <label>${email_label}</label>\n" +
-                    "                <input type=\"email\" name=\"email\" required>\n" +
+                    "                <input type=\"email\" id=\"email\" name=\"email\" required>\n" +
                     "            </div>\n" +
+                    "            \n" +
                     "            <div class=\"form-group\">\n" +
                     "                <label>${code_label}</label>\n" +
-                    "                <input type=\"password\" name=\"code\" required>\n" +
+                    "                <input type=\"password\" id=\"code\" name=\"code\" required>\n" +
                     "            </div>\n" +
+                    "            \n" +
                     "            <button type=\"submit\">${submit_button}</button>\n" +
                     "        </form>\n" +
+                    "        <div class=\"footer\">\n" +
+                    "            TRWhiteList Plugin v1.0\n" +
+                    "        </div>\n" +
                     "    </div>\n" +
                     "</body>\n" +
                     "</html>";
-            
+
             Files.write(file.toPath(), defaultHtml.getBytes(StandardCharsets.UTF_8));
         } catch (IOException e) {
             getLogger().log(Level.SEVERE, "Could not create default index.html", e);
@@ -243,13 +313,14 @@ public class TRWhiteList extends JavaPlugin {
 
     private void startWebServer() throws IOException {
         stopWebServer(); // 确保没有运行中的服务器
-        
+
         webServer = HttpServer.create(new InetSocketAddress(port), 0);
         webServer.createContext("/", new WebHandler(this));
+        webServer.createContext("/send-code", new SendCodeHandler(this)); // 添加发送验证码的端点
         webServer.setExecutor(null); // 使用默认执行器
         webServer.start();
     }
-    
+
     private void restartWebServer() {
         try {
             stopWebServer();
@@ -268,43 +339,34 @@ public class TRWhiteList extends JavaPlugin {
         }
     }
 
-
-// 加载邮箱配置
-private void loadEmailConfig() {
-    // 清空当前已注册邮箱集合
-    registeredEmails.clear();
-    
-    // 检查 emailConfig 是否已初始化且包含 "registered" 配置节点
-    if (emailConfig != null && emailConfig.isConfigurationSection("registered")) {
-        // 获取 "registered" 配置节点
-        ConfigurationSection section = emailConfig.getConfigurationSection("registered");
-        if (section != null) {
-            // 遍历所有键（邮箱地址）
-            for (String key : section.getKeys(false)) {
-                // 将邮箱转换为小写并添加到集合中
-                registeredEmails.add(key.toLowerCase());
+    // 加载邮箱配置
+    private void loadEmailConfig() {
+        registeredEmails.clear();
+        if (emailConfig != null && emailConfig.isConfigurationSection("registered")) {
+            ConfigurationSection section = emailConfig.getConfigurationSection("registered");
+            if (section != null) {
+                for (String key : section.getKeys(false)) {
+                    registeredEmails.add(key.toLowerCase());
+                }
             }
         }
+        getLogger().info("Loaded " + registeredEmails.size() + " registered emails");
     }
-    
-    // 记录加载的邮箱数量
-    getLogger().info("Loaded " + registeredEmails.size() + " registered emails");
-}
-    
+
     // 保存邮箱配置
     private void saveEmailConfig() {
         if (emailConfig == null) {
             getLogger().warning("Cannot save emails.yml: emailConfig is null");
             return;
         }
-        
+
         try {
             emailConfig.set("registered", null); // 清除旧数据
-            
+
             for (String email : registeredEmails) {
                 emailConfig.set("registered." + email, true);
             }
-            
+
             emailConfig.save(emailFile);
             getLogger().info("Saved " + registeredEmails.size() + " registered emails");
         } catch (IOException e) {
@@ -318,33 +380,141 @@ private void loadEmailConfig() {
             try {
                 // 获取玩家对象
                 OfflinePlayer player = Bukkit.getOfflinePlayer(username);
-                
+
                 // 检查玩家是否已经存在
                 if (player.isWhitelisted()) {
                     getLogger().info("Player " + username + " is already whitelisted");
                     return;
                 }
-                
+
                 // 添加玩家到白名单
                 player.setWhitelisted(true);
-                
+
                 // 记录邮箱
                 String normalizedEmail = email.toLowerCase();
                 if (!registeredEmails.contains(normalizedEmail)) {
                     registeredEmails.add(normalizedEmail);
                     saveEmailConfig();
                 }
-                
+
                 String msg = messages.get("console_success")
-                    .replace("{player}", username);
+                        .replace("{player}", username);
                 getLogger().info(msg);
             } catch (Exception e) {
                 String msg = messages.get("console_error")
-                    .replace("{error}", e.getMessage())
-                    .replace("{player}", username);
+                        .replace("{error}", e.getMessage())
+                        .replace("{player}", username);
                 getLogger().warning(msg);
             }
         });
+    }
+
+    // 生成随机验证码
+    private String generateVerificationCode(int length) {
+        String chars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        StringBuilder code = new StringBuilder();
+        Random random = new Random();
+        for (int i = 0; i < length; i++) {
+            code.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return code.toString();
+    }
+
+    // 发送验证码邮件
+    private void sendVerificationCodeEmail(String toEmail, String code) {
+        try {
+            ConfigurationSection smtpConfig = config.getConfigurationSection("smtp");
+            if (smtpConfig == null) {
+                throw new RuntimeException("SMTP configuration is missing");
+            }
+
+            String host = smtpConfig.getString("host");
+            int port = smtpConfig.getInt("port");
+            String username = smtpConfig.getString("username");
+            
+            // 优先从环境变量获取授权码
+            String authorizationCode = System.getenv("SMTP_AUTH_CODE");
+            if (authorizationCode == null || authorizationCode.isEmpty()) {
+                authorizationCode = smtpConfig.getString("authorization-code");
+            }
+            
+            String from = smtpConfig.getString("from");
+            boolean tls = smtpConfig.getBoolean("tls", true);
+
+            Properties props = new Properties();
+            props.put("mail.smtp.auth", "true");
+            props.put("mail.smtp.starttls.enable", String.valueOf(tls));
+            props.put("mail.smtp.host", host);
+            props.put("mail.smtp.port", port);
+
+            Session session = Session.getInstance(props, new Authenticator() {
+                protected PasswordAuthentication getPasswordAuthentication() {
+                    return new PasswordAuthentication(username, authorizationCode);
+                }
+            });
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(from));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(toEmail));
+            message.setSubject("Your Verification Code");
+            message.setText("Your verification code is: " + code);
+
+            Transport.send(message);
+            getLogger().info("Verification code sent to " + toEmail);
+        } catch (AuthenticationFailedException e) {
+            getLogger().log(Level.SEVERE, "SMTP authentication failed. Please check your authorization code.", e);
+            throw new RuntimeException("SMTP authentication failed", e);
+        } catch (MessagingException e) {
+            getLogger().log(Level.SEVERE, "Failed to send verification email to " + toEmail, e);
+            throw new RuntimeException("Failed to send email", e);
+        }
+    }
+
+    // 存储验证码信息
+    private static class CodeInfo {
+        String code;
+        long expiryTime;
+        int attempts; // 尝试次数
+
+        CodeInfo(String code, long expiryTime) {
+            this.code = code;
+            this.expiryTime = expiryTime;
+            this.attempts = 0;
+        }
+
+        boolean isExpired(long currentTime) {
+            return currentTime > expiryTime;
+        }
+    }
+
+    // 验证验证码
+    private boolean verifyVerificationCode(String email, String code) {
+        String normalizedEmail = email.toLowerCase();
+        CodeInfo codeInfo = verificationCodes.get(normalizedEmail);
+
+        if (codeInfo == null) {
+            return false; // 没有发送过验证码
+        }
+
+        if (codeInfo.isExpired(System.currentTimeMillis())) {
+            verificationCodes.remove(normalizedEmail);
+            return false; // 验证码已过期
+        }
+
+        if (codeInfo.attempts >= 3) {
+            verificationCodes.remove(normalizedEmail);
+            return false; // 超过最大尝试次数
+        }
+
+        codeInfo.attempts++; // 增加尝试次数
+
+        if (!codeInfo.code.equals(code)) {
+            return false; // 验证码不匹配
+        }
+
+        // 验证通过，移除验证码
+        verificationCodes.remove(normalizedEmail);
+        return true;
     }
 
     public String getVerificationCode() {
@@ -364,7 +534,7 @@ private void loadEmailConfig() {
         if (htmlContent == null || htmlContent.isEmpty()) {
             return htmlContent;
         }
-        
+
         String result = htmlContent;
         for (Map.Entry<String, String> entry : messages.entrySet()) {
             String placeholder = "${" + entry.getKey() + "}";
@@ -378,18 +548,18 @@ private void loadEmailConfig() {
         if (email == null || email.isEmpty()) {
             return false;
         }
-        
+
         // 简单的邮箱格式验证
         String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
         return Pattern.compile(emailRegex).matcher(email).matches();
     }
-    
+
     // 验证邮箱后缀是否允许
     private boolean isEmailSuffixAllowed(String email) {
         if (allowedEmailSuffixes.isEmpty()) {
             return true; // 如果没有限制，则允许所有
         }
-        
+
         for (String suffix : allowedEmailSuffixes) {
             if (email.toLowerCase().endsWith(suffix.toLowerCase())) {
                 return true;
@@ -398,6 +568,79 @@ private void loadEmailConfig() {
         return false;
     }
 
+    // 处理发送验证码请求
+    static class SendCodeHandler implements HttpHandler {
+        private final TRWhiteList plugin;
+
+        public SendCodeHandler(TRWhiteList plugin) {
+            this.plugin = plugin;
+        }
+
+        @Override
+        public void handle(HttpExchange exchange) throws IOException {
+            String response;
+            int status = 200;
+
+            try {
+                // 解析查询参数
+                String query = exchange.getRequestURI().getQuery();
+                Map<String, String> params = parseQuery(query);
+                String email = params.get("email");
+
+                // 验证邮箱格式
+                if (email == null || email.isEmpty() || !plugin.isValidEmail(email)) {
+                    response = "Invalid email format";
+                    status = 400;
+                } else {
+                    // 生成验证码
+                    int codeLength = plugin.config.getInt("verification-code.length", 6);
+                    String code = plugin.generateVerificationCode(codeLength);
+                    int expirySeconds = plugin.config.getInt("verification-code.expiry", 300);
+                    long expiryTime = System.currentTimeMillis() + expirySeconds * 1000L;
+
+                    // 存储验证码
+                    plugin.verificationCodes.put(email.toLowerCase(), new CodeInfo(code, expiryTime));
+
+                    // 发送邮件
+                    plugin.sendVerificationCodeEmail(email, code);
+                    response = "Verification code sent";
+                }
+            } catch (Exception e) {
+                plugin.getLogger().log(Level.SEVERE, "Failed to send verification code", e);
+                response = "Failed to send verification code";
+                status = 500;
+            }
+
+            // 发送响应
+            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=UTF-8");
+            exchange.sendResponseHeaders(status, response.getBytes(StandardCharsets.UTF_8).length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(response.getBytes(StandardCharsets.UTF_8));
+            }
+        }
+
+        // 解析查询字符串
+        private Map<String, String> parseQuery(String query) {
+            Map<String, String> result = new HashMap<>();
+            if (query == null || query.isEmpty()) {
+                return result;
+            }
+
+            for (String pair : query.split("&")) {
+                String[] entry = pair.split("=");
+                if (entry.length == 2) {
+                    try {
+                        String key = java.net.URLDecoder.decode(entry[0], StandardCharsets.UTF_8);
+                        String value = java.net.URLDecoder.decode(entry[1], StandardCharsets.UTF_8);
+                        result.put(key, value);
+                    } catch (Exception ignored) {}
+                }
+            }
+            return result;
+        }
+    }
+
+    // 处理主请求
     static class WebHandler implements HttpHandler {
         private final TRWhiteList plugin;
 
@@ -410,24 +653,24 @@ private void loadEmailConfig() {
             String response;
             int status = 200;
             Map<String, String> messages = plugin.getMessages();
-            
+
             try {
                 String method = exchange.getRequestMethod();
-                
+
                 if ("POST".equalsIgnoreCase(method)) {
                     // 处理表单提交
                     String formData = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
                     Map<String, String> params = parseFormData(formData);
-                    
+
                     String username = params.getOrDefault("username", "");
                     String email = params.getOrDefault("email", "");
                     String code = params.getOrDefault("code", "");
-                    
+
                     // 验证必填字段
                     if (username.isEmpty() || email.isEmpty() || code.isEmpty()) {
                         response = "<h1>Missing parameters</h1>";
                         status = 400;
-                    } 
+                    }
                     // 验证邮箱格式
                     else if (!plugin.isValidEmail(email)) {
                         response = messages.get("invalid_email");
@@ -446,7 +689,7 @@ private void loadEmailConfig() {
                         status = 403;
                     }
                     // 验证验证码
-                    else if (!code.equals(plugin.getVerificationCode())) {
+                    else if (!plugin.verifyVerificationCode(email, code)) {
                         response = messages.get("invalid_code");
                         status = 403;
                     }
@@ -460,24 +703,24 @@ private void loadEmailConfig() {
                     File htmlFile = plugin.getWebFile("index.html");
                     if (htmlFile.exists()) {
                         String htmlContent = new String(Files.readAllBytes(htmlFile.toPath()), StandardCharsets.UTF_8);
-                        
+
                         // 应用语言设置
                         response = plugin.applyLanguageSettings(htmlContent);
                     } else {
                         // 默认表单
                         String defaultHtml = "<html><body><h1>${index_title}</h1>" +
-                                   "<form method='POST'>" +
-                                   "<label>${username_label}:</label><input type='text' name='username' required><br>" +
-                                   "<label>${email_label}:</label><input type='email' name='email' required><br>" +
-                                   "<label>${code_label}:</label><input type='password' name='code' required><br>" +
-                                   "<input type='submit' value='${submit_button}'>" +
-                                   "</form></body></html>";
-                        
+                                "<form method='POST'>" +
+                                "<label>${username_label}:</label><input type='text' name='username' required><br>" +
+                                "<label>${email_label}:</label><input type='email' name='email' required><br>" +
+                                "<label>${code_label}:</label><input type='password' name='code' required><br>" +
+                                "<input type='submit' value='${submit_button}'>" +
+                                "</form></body></html>";
+
                         // 应用语言设置
                         response = plugin.applyLanguageSettings(defaultHtml);
                     }
                 }
-                
+
                 // 发送响应
                 exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
                 exchange.sendResponseHeaders(status, response.getBytes(StandardCharsets.UTF_8).length);
