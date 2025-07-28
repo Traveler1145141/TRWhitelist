@@ -168,7 +168,7 @@ public class TRWhiteList extends JavaPlugin {
         messages.putIfAbsent("console_success", "Added {player} to whitelist");
         messages.putIfAbsent("console_error", "Error: {error}");
         messages.putIfAbsent("index_title", "TR WhiteList Portal");
-        messages.putIfAbs极狐("username_label", "Minecraft Username");
+        messages.putIfAbsent("username_label", "Minecraft Username");
         messages.putIfAbsent("email_label", "Email Address");
         messages.putIfAbsent("code_label", "Verification Code");
         messages.putIfAbsent("submit_button", "Add to Whitelist");
@@ -297,7 +297,7 @@ public class TRWhiteList extends JavaPlugin {
                     "        </form>\n" +
                     "        <div class=\"footer\">\n" +
                     "            TRWhiteList Plugin v1.0\n" +
-                    "        </极狐" +
+                    "        </div>\n" +
                     "    </div>\n" +
                     "</body>\n" +
                     "</html>";
