@@ -2,202 +2,209 @@ package com.tr.webwhitelist;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class TRWhiteList extends JavaPlugin {
-    private Server webServer;
+    private int port = 11434;
+    private WebServer webServer;
     private String verificationCode;
     private Map<String, String> messages = new HashMap<>();
-    private Path dataFolder;
-    private Path htmlPath;
+    private FileConfiguration config;
 
     @Override
     public void onEnable() {
-        dataFolder = getDataFolder().toPath();
-        htmlPath = dataFolder.resolve("index.html");
+        saveDefaultConfig();
+        config = getConfig();
         
-        // 确保必要的目录和文件存在
-        try {
-            if (!Files.exists(dataFolder)) Files.createDirectories(dataFolder);
-            if (!Files.exists(dataFolder.resolve("config.yml"))) saveResource("config.yml", false);
-            if (!Files.exists(htmlPath)) saveResource("index.html", false);
-        } catch (IOException e) {
-            getLogger().log(Level.SEVERE, "Could not create plugin files", e);
-            getServer().getPluginManager().disablePlugin(this);
-            return;
+        // 初始化配置
+        reloadConfig();
+        
+        // 创建插件数据目录
+        if (!getDataFolder().exists()) {
+            getDataFolder().mkdirs();
         }
         
-        reloadConfigData();
-        startWebServer();
+        // 确保资源文件存在
+        saveResource("index.html", false);
+        
+        try {
+            webServer = new WebServer(this, port);
+            webServer.start();
+            getLogger().info("Web server started on port " + port);
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Failed to start web server", e);
+            getServer().getPluginManager().disablePlugin(this);
+        }
+        
+        // 注册命令
+        getCommand("trwl-reload").setExecutor((sender, command, label, args) -> {
+            if (!sender.hasPermission("trwhitelist.reload")) {
+                sender.sendMessage("§cYou don't have permission!");
+                return true;
+            }
+            
+            reloadConfig();
+            sender.sendMessage("§aConfiguration reloaded!");
+            return true;
+        });
     }
 
     @Override
     public void onDisable() {
-        stopWebServer();
+        if (webServer != null) {
+            webServer.stop();
+            getLogger().info("Web server stopped");
+        }
     }
 
-    public void reloadConfigData() {
-        reloadConfig();
-        verificationCode = getConfig().getString("verification-code", "defaultCode");
+    @Override
+    public void reloadConfig() {
+        super.reloadConfig();
+        config = getConfig();
         
-        // 安全加载消息配置
-        if (getConfig().isConfigurationSection("messages")) {
-            for (String key : getConfig().getConfigurationSection("messages").getKeys(false)) {
-                messages.put(key, getConfig().getString("messages." + key, ""));
-            }
+        // 加载验证码
+        verificationCode = config.getString("verification-code", "default");
+        
+        // 加载消息
+        messages.clear();
+        if (config.isConfigurationSection("messages")) {
+            config.getConfigurationSection("messages").getKeys(false).forEach(key -> {
+                messages.put(key, config.getString("messages." + key, ""));
+            });
         }
         
-        // 设置默认消息以防配置缺失
-        messages.putIfAbsent("success", "<h1>Player added successfully!</h1>");
-        messages.putIfAbsent("invalid_code", "<h1>Invalid verification code</h1>");
+        // 设置默认消息
+        messages.putIfAbsent("success", "<h1 style='color:green'>Success! Player added.</h1>");
+        messages.putIfAbsent("invalid_code", "<h1 style='color:red'>Invalid code!</h1>");
         messages.putIfAbsent("console_success", "Added {player} to whitelist");
-        messages.putIfAbsent("console_error", "Error adding player: {error}");
-        messages.putIfAbsent("index_title", "TR WhiteList Portal");
-        messages.putIfAbsent("username_label", "Minecraft Username");
-        messages.putIfAbsent("code_label", "Verification Code");
-        messages.putIfAbsent("submit_button", "Add to Whitelist");
+        messages.putIfAbsent("console_error", "Error: {error}");
     }
 
-    private void startWebServer() {
-        new Thread(() -> {
+    public void addToWhitelist(String username) {
+        Bukkit.getScheduler().runTask(this, () -> {
             try {
-                webServer = new Server(11434);
-                webServer.setHandler(new WebHandler());
-                webServer.start();
-                webServer.join();
-                getLogger().info("Web server started on port 11434");
+                OfflinePlayer player = Bukkit.getOfflinePlayer(username);
+                player.setWhitelisted(true);
+                Bukkit.reloadWhitelist();
+                getLogger().info(messages.get("console_success")
+                              .replace("{player}", username));
             } catch (Exception e) {
-                getLogger().log(Level.SEVERE, "Web server error", e);
+                getLogger().warning(messages.get("console_error")
+                             .replace("{error}", e.getMessage()));
             }
-        }, "TRWhiteList-WebServer").start();
+        });
     }
 
-    private void stopWebServer() {
-        if (webServer != null && webServer.isStarted()) {
-            try {
-                webServer.stop();
-                getLogger().info("Web server stopped");
-            } catch (Exception e) {
-                getLogger().log(Level.WARNING, "Failed to stop web server", e);
-            }
+    public String getVerificationCode() {
+        return verificationCode;
+    }
+
+    public Map<String, String> getMessages() {
+        return messages;
+    }
+
+    public File getWebFile(String name) {
+        return new File(getDataFolder(), name);
+    }
+
+    // 内置的简单 HTTP 服务器
+    public static class WebServer implements com.sun.net.httpserver.HttpHandler {
+        private com.sun.net.httpserver.HttpServer server;
+        private final TRWhiteList plugin;
+
+        public WebServer(TRWhiteList plugin, int port) throws IOException {
+            this.plugin = plugin;
+            server = com.sun.net.httpserver.HttpServer.create(new java.net.InetSocketAddress(port), 0);
+            server.createContext("/", this);
         }
-    }
 
-    class WebHandler extends AbstractHandler {
-        private final Pattern PLACEHOLDER_PATTERN = Pattern.compile("\\$\\{(.*?)\\}");
-        
+        public void start() {
+            server.start();
+        }
+
+        public void stop() {
+            server.stop(0);
+        }
+
         @Override
-        public void handle(String target, Request baseRequest, 
-                          HttpServletRequest request, HttpServletResponse response) 
-            throws IOException {
-            
-            baseRequest.setHandled(true);
-            response.setContentType("text/html;charset=utf-8");
+        public void handle(com.sun.net.httpserver.HttpExchange exchange) throws IOException {
+            String response;
+            int status = 200;
+            Map<String, String> messages = plugin.getMessages();
             
             try {
-                if ("POST".equalsIgnoreCase(request.getMethod())) {
-                    handlePostRequest(request, response);
+                if ("POST".equalsIgnoreCase(exchange.getRequestMethod())) {
+                    // 处理表单提交
+                    String formData = new String(exchange.getRequestBody().readAllBytes(), "UTF-8");
+                    Map<String, String> params = parseFormData(formData);
+                    
+                    String username = params.getOrDefault("username", "");
+                    String code = params.getOrDefault("code", "");
+                    
+                    if (code.equals(plugin.getVerificationCode())) {
+                        plugin.addToWhitelist(username);
+                        response = messages.get("success");
+                    } else {
+                        response = messages.get("invalid_code");
+                        status = 403;
+                    }
                 } else {
-                    serveIndexPage(response);
+                    // 提供 HTML 页面
+                    Path path = plugin.getWebFile("index.html").toPath();
+                    if (Files.exists(path)) {
+                        byte[] htmlBytes = Files.readAllBytes(path);
+                        response = new String(htmlBytes, "UTF-8");
+                    } else {
+                        // 默认表单
+                        response = "<html><body><h1>" + messages.getOrDefault("index_title", "TR WhiteList") + "</h1>" +
+                                   "<form method='POST'>" +
+                                   "<label>" + messages.getOrDefault("username_label", "Username") + 
+                                   ":</label><input type='text' name='username'><br>" +
+                                   "<label>" + messages.getOrDefault("code_label", "Code") + 
+                                   ":</label><input type='password' name='code'><br>" +
+                                   "<input type='submit' value='" + messages.getOrDefault("submit_button", "Submit") + "'>" +
+                                   "</form></body></html>";
+                    }
+                }
+                
+                // 发送响应
+                exchange.getResponseHeaders().set("Content-Type", "text/html; charset=UTF-8");
+                exchange.sendResponseHeaders(status, response.getBytes("UTF-8").length);
+                try (java.io.OutputStream os = exchange.getResponseBody()) {
+                    os.write(response.getBytes("UTF-8"));
                 }
             } catch (Exception e) {
-                getLogger().log(Level.WARNING, "Error handling web request", e);
-                response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                response.getWriter().println("<h1>Internal Server Error</h1>");
-            }
-        }
-        
-        private void handlePostRequest(HttpServletRequest request, HttpServletResponse response) 
-            throws IOException {
-            
-            String username = request.getParameter("username");
-            String enteredCode = request.getParameter("code");
-            
-            if (enteredCode == null || username == null) {
-                response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
-                response.getWriter().println("<h1>Missing parameters</h1>");
-                return;
-            }
-            
-            if (enteredCode.equals(verificationCode)) {
-                addToWhitelist(username);
-                response.setStatus(HttpServletResponse.SC_OK);
-                response.getWriter().println(messages.get("success"));
-            } else {
-                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                response.getWriter().println(messages.get("invalid_code"));
-            }
-        }
-        
-        private void serveIndexPage(HttpServletResponse response) throws IOException {
-            if (Files.exists(htmlPath)) {
-                String htmlContent = new String(Files.readAllBytes(htmlPath), StandardCharsets.UTF_8);
-                
-                // 替换占位符
-                Matcher matcher = PLACEHOLDER_PATTERN.matcher(htmlContent);
-                StringBuffer result = new StringBuffer();
-                while (matcher.find()) {
-                    String placeholder = matcher.group(1);
-                    String replacement = messages.getOrDefault(placeholder, "");
-                    matcher.appendReplacement(result, replacement);
+                plugin.getLogger().log(Level.SEVERE, "Web request error", e);
+                String error = "Internal server error";
+                exchange.sendResponseHeaders(500, error.length());
+                try (java.io.OutputStream os = exchange.getResponseBody()) {
+                    os.write(error.getBytes("UTF-8"));
                 }
-                matcher.appendTail(result);
-                
-                response.getWriter().print(result.toString());
-            } else {
-                // 应急回退表单
-                String form = "<html><body><h1>${index_title}</h1>" +
-                    "<form method='POST'>" +
-                    "${username_label}: <input type='text' name='username' required><br>" +
-                    "${code_label}: <input type='password' name='code' required><br>" +
-                    "<input type='submit' value='${submit_button}'>" +
-                    "</form></body></html>";
-                
-                response.getWriter().print(form.replace("${index_title}", messages.get("index_title"))
-                    .replace("${username_label}", messages.get("username_label"))
-                    .replace("${code_label}", messages.get("code_label"))
-                    .replace("${submit_button}", messages.get("submit_button")));
             }
         }
-    }
 
-    private void addToWhitelist(String username) {
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                try {
-                    OfflinePlayer player = Bukkit.getOfflinePlayer(username);
-                    player.setWhitelisted(true);
-                    Bukkit.reloadWhitelist();
-                    
-                    String msg = messages.get("console_success")
-                        .replace("{player}", username)
-                        .replace("{error}", "");
-                    getLogger().info(msg);
-                } catch (Exception e) {
-                    String msg = messages.get("console_error")
-                        .replace("{player}", username)
-                        .replace("{error}", e.getMessage());
-                    getLogger().warning(msg);
+        private Map<String, String> parseFormData(String formData) {
+            Map<String, String> result = new HashMap<>();
+            for (String pair : formData.split("&")) {
+                String[] entry = pair.split("=");
+                if (entry.length == 2) {
+                    try {
+                        String key = java.net.URLDecoder.decode(entry[0], "UTF-8");
+                        String value = java.net.URLDecoder.decode(entry[1], "UTF-8");
+                        result.put(key, value);
+                    } catch (Exception ignored) {}
                 }
             }
-        }.runTask(this);
+            return result;
+        }
     }
 }
