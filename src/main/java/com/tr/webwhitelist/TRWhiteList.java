@@ -9,14 +9,14 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
-import org.bukkit.configuration.ConfigurationSection;
+import org.b极狐kit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import javax.mail.*;
-import javax.mail.internet.InternetAddress;
-import javax.mail.internet.MimeMessage;
+import com.tr.shaded.javax.mail.*;
+import com.tr.shaded.javax.mail.internet.InternetAddress;
+import com.tr.shaded.javax.mail.internet.MimeMessage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,11 +34,6 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 public class TRWhiteList extends JavaPlugin {
-
-    // 存储验证码和过期时间（邮箱 -> 验证码和过期时间）
-    private ConcurrentHashMap<String, CodeInfo> verificationCodes = new ConcurrentHashMap<>();
-    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     private HttpServer webServer;
     private String verificationCode;
     private Map<String, String> messages = new HashMap<>();
@@ -48,6 +43,8 @@ public class TRWhiteList extends JavaPlugin {
     private File emailFile;
     private Set<String> registeredEmails = new HashSet<>();
     private List<String> allowedEmailSuffixes = new ArrayList<>();
+    private ConcurrentHashMap<String, CodeInfo> verificationCodes = new ConcurrentHashMap<>();
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Override
     public void onEnable() {
@@ -55,24 +52,24 @@ public class TRWhiteList extends JavaPlugin {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
         }
-
+        
         // 初始化配置文件
         saveDefaultConfig();
         config = getConfig();
-
+        
         // 初始化邮箱配置文件
         emailFile = new File(getDataFolder(), "emails.yml");
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
         emailConfig = YamlConfiguration.loadConfiguration(emailFile);
-
+        
         // 确保资源文件存在
         ensureResourceFiles();
-
+        
         // 初始化配置
         reloadConfig();
-
+        
         try {
             startWebServer();
             getLogger().info("Web server started on port " + port);
@@ -81,11 +78,11 @@ public class TRWhiteList extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-
+        
         // 注册命令
         registerCommand("trwl-reload", new ReloadCommand());
         registerCommand("trwl-clear-emails", new ClearEmailsCommand());
-
+        
         // 启动定时任务清理过期的验证码
         scheduler.scheduleAtFixedRate(() -> {
             long now = System.currentTimeMillis();
@@ -94,7 +91,7 @@ public class TRWhiteList extends JavaPlugin {
     }
 
     private void registerCommand(String commandName, CommandExecutor executor) {
-        PluginCommand command = getCommand(command极狐
+        PluginCommand command = getCommand(commandName);
         if (command != null) {
             command.setExecutor(executor);
         } else {
@@ -153,7 +150,7 @@ public class TRWhiteList extends JavaPlugin {
         // 加载允许的邮箱后缀
         allowedEmailSuffixes = config.getStringList("allowed-email-suffixes");
         
-        // 加载消息
+极狐 // 加载消息
         messages.clear();
         if (config.isConfigurationSection("messages")) {
             config.getConfigurationSection("messages").getKeys(false).forEach(key -> {
@@ -247,7 +244,7 @@ public class TRWhiteList extends JavaPlugin {
                     "            margin-bottom: 20px;\n" +
                     "            text-align: center;\n" +
                     "        }\n" +
-                    "        .form-group {\n" +
+                    "        .form-group {\极狐
                     "            margin-bottom: 20px;\n" +
                     "        }\n" +
                     "        label {\n" +
@@ -486,7 +483,7 @@ public class TRWhiteList extends JavaPlugin {
             return currentTime > expiryTime;
         }
     }
-
+    
     // 验证验证码
     private boolean verifyVerificationCode(String email, String code) {
         String normalizedEmail = email.toLowerCase();
@@ -671,7 +668,7 @@ public class TRWhiteList extends JavaPlugin {
                         status = 400;
                     } 
                     // 验证邮箱格式
-                    else if (!plugin.isValidEmail(email)) {
+                    else if (!plugin.isValid极狐(email)) {
                         response = messages.get("invalid_email");
                         status = 400;
                     }
@@ -679,7 +676,7 @@ public class TRWhiteList extends JavaPlugin {
                     else if (!plugin.isEmailSuffixAllowed(email)) {
                         String suffixes = String.join(", ", plugin.allowedEmailSuffixes);
                         response = messages.get("email_suffix_not_allowed")
-                                .replace("{s极狐es}", suffixes);
+                                .replace("{suffixes}", suffixes);
                         status = 403;
                     }
                     // 验证邮箱是否已注册
