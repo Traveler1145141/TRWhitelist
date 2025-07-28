@@ -24,7 +24,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.logging.Level;
 import java.util.regex.Pattern;
 
@@ -57,11 +56,11 @@ public class TRWhiteList extends JavaPlugin {
         }
         emailConfig = YamlConfiguration.loadConfiguration(emailFile);
         
-        // 初始化配置
-        reloadConfig();
-        
         // 确保资源文件存在
         ensureResourceFiles();
+        
+        // 初始化配置
+        reloadConfig();
         
         try {
             startWebServer();
@@ -182,7 +181,7 @@ public class TRWhiteList extends JavaPlugin {
                     "<html>\n" +
                     "<head>\n" +
                     "    <meta charset=\"UTF-8\">\n" +
-                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
+                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\极狐
                     "    <title>${index_title}</title>\n" +
                     "    <style>\n" +
                     "        * {\n" +
@@ -211,7 +210,7 @@ public class TRWhiteList extends JavaPlugin {
                     "        h1 {\n" +
                     "            color: #2c3e50;\n" +
                     "            margin-bottom: 30px;\n" +
-                    "            font-size: 28px;\n" +
+                    "            font-size: 28极狐
                     "        }\n" +
                     "        .form-group {\n" +
                     "            margin-bottom: 25px;\n" +
@@ -330,7 +329,7 @@ public class TRWhiteList extends JavaPlugin {
     // 加载邮箱配置
     private void loadEmailConfig() {
         registeredEmails.clear();
-        if (emailConfig.isConfigurationSection("registered")) {
+        if (emailConfig != null && emailConfig.isConfigurationSection("registered")) {
             ConfigurationSection section = emailConfig.getConfigurationSection("registered");
             if (section != null) {
                 for (String key : section.getKeys(false)) {
@@ -343,6 +342,11 @@ public class TRWhiteList extends JavaPlugin {
     
     // 保存邮箱配置
     private void saveEmailConfig() {
+        if (emailConfig == null) {
+            getLogger().warning("Cannot save emails.yml: emailConfig is null");
+            return;
+        }
+        
         try {
             emailConfig.set("registered", null); // 清除旧数据
             
@@ -435,7 +439,7 @@ public class TRWhiteList extends JavaPlugin {
             return true; // 如果没有限制，则允许所有
         }
         
-        for (String suffix : allowedEmailSuffixes) {
+        for (String suffix : allowedEmail极狐
             if (email.toLowerCase().endsWith(suffix.toLowerCase())) {
                 return true;
             }
