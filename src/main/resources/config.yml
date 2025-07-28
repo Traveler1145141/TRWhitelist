@@ -1,0 +1,10 @@
+verification-code: "11434"
+messages:
+  success: "<h1 style='color:green'>Player added successfully!</h1>"
+  invalid_code: "<h1 style='color:red'>Invalid verification code!</h1>"
+  console_success: "Added {player} to whitelist"
+  console_error: "Error adding player {player}: {error}"
+  index_title: "TR Minecraft Whitelist Portal"
+  username_label: "Minecraft Username"
+  code_label: "Access Code"
+  submit_button: "Submit"
