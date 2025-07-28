@@ -25,3 +25,14 @@ messages:
   email_label: "Email Address"
   code_label: "Access Code"
   submit_button: "Add to Whitelist"
+
+#如果你是中国用户请把上面的message删除，将下面的_cn删掉
+messages_cn:
+  success: "<h1 style='color:green'>玩家添加成功!</h1>"
+  invalid_code: "<h1 style='color:red'>错误的验证码!</h1>"
+  email_required: "<h1 style='color:red'>错误的邮箱!</h1>"
+  invalid_email: "<h1 style='color:red'>电子邮件格式无效!</h1>"
+  email_suffix_not_allowed: "<h1 style='color:red'>不允许使用电子邮件后缀！允许： {suffixes}</h1>"
+  email_already_registered: "<h1 style='color:red'>这个邮箱已经注册过了!</h1>"
+  console_success: "已添加 {player} 到白名单"
+  console_error: "错误的添加玩家 {player}: {error}"
