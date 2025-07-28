@@ -5,6 +5,10 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -72,7 +76,22 @@ public class TRWhiteList extends JavaPlugin {
         }
         
         // 注册命令
-        getCommand("trwl-reload").setExecutor((sender, command, label, args) -> {
+        registerCommand("trwl-reload", new ReloadCommand());
+        registerCommand("trwl-clear-emails", new ClearEmailsCommand());
+    }
+
+    private void registerCommand(String commandName, CommandExecutor executor) {
+        PluginCommand command = getCommand(commandName);
+        if (command != null) {
+            command.setExecutor(executor);
+        } else {
+            getLogger().warning("Command '" + commandName + "' not found in plugin.yml");
+        }
+    }
+
+    private class ReloadCommand implements CommandExecutor {
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
             if (!sender.hasPermission("trwhitelist.reload")) {
                 sender.sendMessage("§cYou don't have permission!");
                 return true;
@@ -82,10 +101,12 @@ public class TRWhiteList extends JavaPlugin {
             restartWebServer();
             sender.sendMessage("§aConfiguration reloaded and web server restarted!");
             return true;
-        });
-        
-        // 注册清理邮箱命令
-        getCommand("trwl-clear-emails").setExecutor((sender, command, label, args) -> {
+        }
+    }
+
+    private class ClearEmailsCommand implements CommandExecutor {
+        @Override
+        public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
             if (!sender.hasPermission("trwhitelist.admin")) {
                 sender.sendMessage("§cYou don't have permission!");
                 return true;
@@ -95,7 +116,7 @@ public class TRWhiteList extends JavaPlugin {
             saveEmailConfig();
             sender.sendMessage("§aEmail registry cleared!");
             return true;
-        });
+        }
     }
 
     @Override
@@ -174,7 +195,7 @@ public class TRWhiteList extends JavaPlugin {
         }
     }
     
-    // 创建默认HTML文件 - 完全重写以避免任何字符串问题
+    // 创建默认HTML文件
     private void createDefaultHtmlFile(File file) {
         try {
             // 使用简单的HTML结构
@@ -184,12 +205,12 @@ public class TRWhiteList extends JavaPlugin {
                     "    <meta charset=\"UTF-8\">\n" +
                     "    <title>${index_title}</title>\n" +
                     "    <style>\n" +
-                    "        body { font-family: Arial, sans-serif; }\n" +
-                    "        .container { max-width: 500px; margin: 0 auto; padding: 20px; }\n" +
+                    "        body { font-family: Arial, sans-serif; padding: 20px; }\n" +
+                    "        .container { max-width: 500px; margin: 0 auto; padding: 20px; background: #f8f8f8; border-radius: 8px; }\n" +
                     "        .form-group { margin-bottom: 15px; }\n" +
                     "        label { display: block; margin-bottom: 5px; }\n" +
-                    "        input { width: 100%; padding: 8px; }\n" +
-                    "        button { padding: 10px; background: #4CAF50; color: white; border: none; width: 100%; }\n" +
+                    "        input { width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; }\n" +
+                    "        button { padding: 10px; background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%; }\n" +
                     "    </style>\n" +
                     "</head>\n" +
                     "<body>\n" +
@@ -247,19 +268,28 @@ public class TRWhiteList extends JavaPlugin {
         }
     }
 
-    // 加载邮箱配置
-    private void loadEmailConfig() {
-        registeredEmails.clear();
-        if (emailConfig != null && emailConfig.isConfigurationSection("registered")) {
-            ConfigurationSection section = emailConfig.getConfigurationSection("registered");
-            if (section != null) {
-                for (String key : section.getKeys(false)) {
-                    registeredEmails.add(key.toLowerCase());
-                }
+
+// 加载邮箱配置
+private void loadEmailConfig() {
+    // 清空当前已注册邮箱集合
+    registeredEmails.clear();
+    
+    // 检查 emailConfig 是否已初始化且包含 "registered" 配置节点
+    if (emailConfig != null && emailConfig.isConfigurationSection("registered")) {
+        // 获取 "registered" 配置节点
+        ConfigurationSection section = emailConfig.getConfigurationSection("registered");
+        if (section != null) {
+            // 遍历所有键（邮箱地址）
+            for (String key : section.getKeys(false)) {
+                // 将邮箱转换为小写并添加到集合中
+                registeredEmails.add(key.toLowerCase());
             }
         }
-        getLogger().info("Loaded " + registeredEmails.size() + " registered emails");
     }
+    
+    // 记录加载的邮箱数量
+    getLogger().info("Loaded " + registeredEmails.size() + " registered emails");
+}
     
     // 保存邮箱配置
     private void saveEmailConfig() {
