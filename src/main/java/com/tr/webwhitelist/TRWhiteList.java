@@ -34,6 +34,11 @@ import java.util.logging.Level;
 import java.util.regex.Pattern;
 
 public class TRWhiteList extends JavaPlugin {
+
+    // 存储验证码和过期时间（邮箱 -> 验证码和过期时间）
+    private ConcurrentHashMap<String, CodeInfo> verificationCodes = new ConcurrentHashMap<>();
+    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+
     private HttpServer webServer;
     private String verificationCode;
     private Map<String, String> messages = new HashMap<>();
@@ -43,8 +48,6 @@ public class TRWhiteList extends JavaPlugin {
     private File emailFile;
     private Set<String> registeredEmails = new HashSet<>();
     private List<String> allowedEmailSuffixes = new ArrayList<>();
-    private ConcurrentHashMap<String, CodeInfo> verificationCodes = new ConcurrentHashMap<>();
-    private ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
 
     @Override
     public void onEnable() {
@@ -52,24 +55,24 @@ public class TRWhiteList extends JavaPlugin {
         if (!getDataFolder().exists()) {
             getDataFolder().mkdirs();
         }
-        
+
         // 初始化配置文件
         saveDefaultConfig();
         config = getConfig();
-        
+
         // 初始化邮箱配置文件
         emailFile = new File(getDataFolder(), "emails.yml");
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
         emailConfig = YamlConfiguration.loadConfiguration(emailFile);
-        
+
         // 确保资源文件存在
         ensureResourceFiles();
-        
+
         // 初始化配置
         reloadConfig();
-        
+
         try {
             startWebServer();
             getLogger().info("Web server started on port " + port);
@@ -78,11 +81,11 @@ public class TRWhiteList extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        
+
         // 注册命令
         registerCommand("trwl-reload", new ReloadCommand());
         registerCommand("trwl-clear-emails", new ClearEmailsCommand());
-        
+
         // 启动定时任务清理过期的验证码
         scheduler.scheduleAtFixedRate(() -> {
             long now = System.currentTimeMillis();
@@ -91,7 +94,7 @@ public class TRWhiteList extends JavaPlugin {
     }
 
     private void registerCommand(String commandName, CommandExecutor executor) {
-        PluginCommand command = getCommand(commandName);
+        PluginCommand command = getCommand(command极狐
         if (command != null) {
             command.setExecutor(executor);
         } else {
@@ -483,7 +486,7 @@ public class TRWhiteList extends JavaPlugin {
             return currentTime > expiryTime;
         }
     }
-    
+
     // 验证验证码
     private boolean verifyVerificationCode(String email, String code) {
         String normalizedEmail = email.toLowerCase();
@@ -676,7 +679,7 @@ public class TRWhiteList extends JavaPlugin {
                     else if (!plugin.isEmailSuffixAllowed(email)) {
                         String suffixes = String.join(", ", plugin.allowedEmailSuffixes);
                         response = messages.get("email_suffix_not_allowed")
-                                .replace("{suffixes}", suffixes);
+                                .replace("{s极狐es}", suffixes);
                         status = 403;
                     }
                     // 验证邮箱是否已注册
