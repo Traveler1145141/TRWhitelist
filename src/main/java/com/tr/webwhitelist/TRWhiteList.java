@@ -181,7 +181,7 @@ public class TRWhiteList extends JavaPlugin {
                     "<html>\n" +
                     "<head>\n" +
                     "    <meta charset=\"UTF-8\">\n" +
-                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\极狐
+                    "    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n" +
                     "    <title>${index_title}</title>\n" +
                     "    <style>\n" +
                     "        * {\n" +
@@ -195,7 +195,7 @@ public class TRWhiteList extends JavaPlugin {
                     "            min-height: 100vh;\n" +
                     "            display: flex;\n" +
                     "            justify-content: center;\n" +
-                    "            align-items: center;\n" +
+                    "            align-items: center;\极狐" +
                     "            padding: 20px;\n" +
                     "        }\n" +
                     "        .container {\n" +
@@ -210,7 +210,7 @@ public class TRWhiteList extends JavaPlugin {
                     "        h1 {\n" +
                     "            color: #2c3e50;\n" +
                     "            margin-bottom: 30px;\n" +
-                    "            font-size: 28极狐
+                    "            font-size: 28px;\n" +
                     "        }\n" +
                     "        .form-group {\n" +
                     "            margin-bottom: 25px;\n" +
@@ -219,7 +219,7 @@ public class TRWhiteList extends JavaPlugin {
                     "        label {\n" +
                     "            display: block;\n" +
                     "            margin-bottom: 8px;\n" +
-                    "            color: #2c3e50;\n" +
+                   极狐"            color: #2c3e50;\n" +
                     "            font-weight: 600;\n" +
                     "        }\n" +
                     "        input {\n" +
@@ -285,7 +285,7 @@ public class TRWhiteList extends JavaPlugin {
                     "        </form>\n" +
                     "        <div class=\"info\">\n" +
                     "            Only emails with allowed suffixes can be registered.\n" +
-                    "        </div>\n" +
+                    "        </极狐" +
                     "        <div class=\"footer\">\n" +
                     "            TRWhiteList Plugin v1.0\n" +
                     "        </div>\n" +
@@ -439,7 +439,7 @@ public class TRWhiteList extends JavaPlugin {
             return true; // 如果没有限制，则允许所有
         }
         
-        for (String suffix : allowedEmail极狐
+        for (String suffix : allowedEmailSuffixes) {
             if (email.toLowerCase().endsWith(suffix.toLowerCase())) {
                 return true;
             }
