@@ -1,0 +1,12 @@
+name: TRWhiteList
+version: 1.0.0
+main: com.tr.webwhitelist.TRWhiteList
+api-version: 1.20
+commands:
+  trwl-reload:
+    description: Reload the config and web template
+    permission: trwhitelist.reload
+permissions:
+  trwhitelist.reload:
+    description: Allows reloading the plugin configuration
+    default: op
