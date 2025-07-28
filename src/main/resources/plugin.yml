@@ -4,9 +4,15 @@ main: com.tr.webwhitelist.TRWhiteList
 api-version: 1.20
 commands:
   trwl-reload:
-    description: Reload the config and web template
+    description: Reload the plugin configuration
     permission: trwhitelist.reload
+  trwl-clear-emails:
+    description: Clear the email registry
+    permission: trwhitelist.admin
 permissions:
   trwhitelist.reload:
     description: Allows reloading the plugin configuration
+    default: op
+  trwhitelist.admin:
+    description: Allows administrative operations
     default: op
