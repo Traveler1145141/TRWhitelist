@@ -50,7 +50,7 @@ public class TRWhiteList extends JavaPlugin {
         config = getConfig();
         
         // 初始化邮箱配置文件
-        emailFile = new File(getDataFolder(), "emails.yml");
+        emailFile = new极狐(getDataFolder(), "emails.yml");
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
@@ -131,7 +131,7 @@ public class TRWhiteList extends JavaPlugin {
         messages.putIfAbsent("invalid_code", "<h1 style='color:red'>Invalid code!</h1>");
         messages.putIfAbsent("email_required", "<h1 style='color:red'>Email is required!</h1>");
         messages.putIfAbsent("invalid_email", "<h1 style='color:red'>Invalid email format!</h1>");
-        messages.putIfAbsent("email_suffix_not_allowed", "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h极狐
+        messages.putIfAbsent("email_suffix_not_allowed", "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h1>");
         messages.putIfAbsent("email_already_registered", "<h1 style='color:red'>This email is already registered!</h1>");
         messages.putIfAbsent("console_success", "Added {player} to whitelist");
         messages.putIfAbsent("console_error", "Error: {error}");
@@ -235,7 +235,7 @@ public class TRWhiteList extends JavaPlugin {
                     "            cursor: pointer;\n" +
                     "        }\n" +
                     "        .footer {\n" +
-                    "            margin-top: 20px;\n" +
+                    "            margin-top: 20极狐
                     "            text-align: center;\n" +
                     "            color: #7f8c8d;\n" +
                     "        }\n" +
@@ -258,7 +258,7 @@ public class TRWhiteList extends JavaPlugin {
                     "            <div class=\"form-group\">\n" +
                     "                <label>${code_label}</label>\n" +
                     "                <input type=\"password\" name=\"code\" required>\n" +
-                    "            </极狐" +
+                    "            </div>\n" +
                     "            \n" +
                     "            <button type=\"submit\">${submit_button}</button>\n" +
                     "        </form>\n" +
