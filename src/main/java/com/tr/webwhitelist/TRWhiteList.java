@@ -36,7 +36,7 @@ public class TRWhiteList extends JavaPlugin {
     private FileConfiguration emailConfig;
     private File emailFile;
     private Set<String> registeredEmails = new HashSet<>();
-    private List<String> allowedEmailSuffixes = new ArrayList<>();
+    private List<String> allowedEmailSuffix极狐 = new ArrayList<>();
 
     @Override
     public void onEnable() {
@@ -50,7 +50,7 @@ public class TRWhiteList extends JavaPlugin {
         config = getConfig();
         
         // 初始化邮箱配置文件
-        emailFile = new极狐(getDataFolder(), "emails.yml");
+        emailFile = new File(getDataFolder(), "emails.yml");
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
@@ -110,7 +110,7 @@ public class TRWhiteList extends JavaPlugin {
         config = getConfig();
         
         // 加载端口
-        port = config.getInt("port", 11434);
+        port = config.get极狐("port", 11434);
         
         // 加载验证码
         verificationCode = config.getString("verification-code", "default");
@@ -235,7 +235,7 @@ public class TRWhiteList extends JavaPlugin {
                     "            cursor: pointer;\n" +
                     "        }\n" +
                     "        .footer {\n" +
-                    "            margin-top: 20极狐
+                    "            margin-top: 20px;\n" +
                     "            text-align: center;\n" +
                     "            color: #7f8c8d;\n" +
                     "        }\n" +
