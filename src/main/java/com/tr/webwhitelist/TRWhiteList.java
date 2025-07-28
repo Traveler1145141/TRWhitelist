@@ -131,7 +131,7 @@ public class TRWhiteList extends JavaPlugin {
         messages.putIfAbsent("invalid_code", "<h1 style='color:red'>Invalid code!</h1>");
         messages.putIfAbsent("email_required", "<h1 style='color:red'>Email is required!</h1>");
         messages.putIfAbsent("invalid_email", "<h1 style='color:red'>Invalid email format!</h1>");
-        messages.putIfAbsent("email_suffix_not_allowed", "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h1>");
+        messages.putIfAbsent("email_suffix_not_allowed", "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h极狐
         messages.putIfAbsent("email_already_registered", "<h1 style='color:red'>This email is already registered!</h1>");
         messages.putIfAbsent("console_success", "Added {player} to whitelist");
         messages.putIfAbsent("console_error", "Error: {error}");
@@ -188,77 +188,56 @@ public class TRWhiteList extends JavaPlugin {
                     "            box-sizing: border-box;\n" +
                     "            margin: 0;\n" +
                     "            padding: 0;\n" +
-                    "            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;\n" +
+                    "            font-family: Arial, sans-serif;\n" +
                     "        }\n" +
                     "        body {\n" +
-                    "            background: linear-gradient(135deg, #1e5799, #207cca);\n" +
+                    "            background: #1e5799;\n" +
                     "            min-height: 100vh;\n" +
                     "            display: flex;\n" +
                     "            justify-content: center;\n" +
-                    "            align-items: center;\极狐" +
+                    "            align-items: center;\n" +
                     "            padding: 20px;\n" +
                     "        }\n" +
                     "        .container {\n" +
                     "            background-color: rgba(255, 255, 255, 0.95);\n" +
-                    "            border-radius: 12px;\n" +
-                    "            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);\n" +
+                    "            border-radius: 8px;\n" +
+                    "            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);\n" +
                     "            width: 100%;\n" +
                     "            max-width: 450px;\n" +
-                    "            padding: 40px;\n" +
-                    "            text-align: center;\n" +
+                    "            padding: 30px;\n" +
                     "        }\n" +
                     "        h1 {\n" +
                     "            color: #2c3e50;\n" +
-                    "            margin-bottom: 30px;\n" +
-                    "            font-size: 28px;\n" +
+                    "            margin-bottom: 20px;\n" +
+                    "            text-align: center;\n" +
                     "        }\n" +
                     "        .form-group {\n" +
-                    "            margin-bottom: 25px;\n" +
-                    "            text-align: left;\n" +
+                    "            margin-bottom: 20px;\n" +
                     "        }\n" +
                     "        label {\n" +
                     "            display: block;\n" +
                     "            margin-bottom: 8px;\n" +
-                   极狐"            color: #2c3e50;\n" +
-                    "            font-weight: 600;\n" +
+                    "            color: #2c3e50;\n" +
                     "        }\n" +
                     "        input {\n" +
                     "            width: 100%;\n" +
-                    "            padding: 14px;\n" +
-                    "            border: 2px solid #e0e0e0;\n" +
-                    "            border-radius: 8px;\n" +
-                    "            font-size: 16px;\n" +
-                    "            transition: border-color 0.3s;\n" +
-                    "        }\n" +
-                    "        input:focus {\n" +
-                    "            border-color: #3498db;\n" +
-                    "            outline: none;\n" +
+                    "            padding: 12px;\n" +
+                    "            border: 1px solid #ddd;\n" +
+                    "            border-radius: 4px;\n" +
                     "        }\n" +
                     "        button {\n" +
-                    "            background: linear-gradient(135deg, #3498db, #2980b9);\n" +
+                    "            background: #3498db;\n" +
                     "            color: white;\n" +
                     "            border: none;\n" +
-                    "            padding: 15px 30px;\n" +
-                    "            border-radius: 8px;\n" +
-                    "            font-size: 18px;\n" +
-                    "            font-weight: 600;\n" +
-                    "            cursor: pointer;\n" +
-                    "            transition: all 0.3s ease;\n" +
+                    "            padding: 12px 20px;\n" +
+                    "            border-radius: 4px;\n" +
                     "            width: 100%;\n" +
-                    "        }\n" +
-                    "        button:hover {\n" +
-                    "            transform: translateY(-2px);\n" +
-                    "            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);\n" +
-                    "        }\n" +
-                    "        .info {\n" +
-                    "            margin-top: 15px;\n" +
-                    "            font-size: 14px;\n" +
-                    "            color: #7f8c8d;\n" +
+                    "            cursor: pointer;\n" +
                     "        }\n" +
                     "        .footer {\n" +
-                    "            margin-top: 25px;\n" +
+                    "            margin-top: 20px;\n" +
+                    "            text-align: center;\n" +
                     "            color: #7f8c8d;\n" +
-                    "            font-size: 14px;\n" +
                     "        }\n" +
                     "    </style>\n" +
                     "</head>\n" +
@@ -267,25 +246,22 @@ public class TRWhiteList extends JavaPlugin {
                     "        <h1>${index_title}</h1>\n" +
                     "        <form method=\"POST\">\n" +
                     "            <div class=\"form-group\">\n" +
-                    "                <label for=\"username\">${username_label}</label>\n" +
-                    "                <input type=\"text\" id=\"username\" name=\"username\" required>\n" +
+                    "                <label>${username_label}</label>\n" +
+                    "                <input type=\"text\" name=\"username\" required>\n" +
                     "            </div>\n" +
                     "            \n" +
                     "            <div class=\"form-group\">\n" +
-                    "                <label for=\"email\">${email_label}</label>\n" +
-                    "                <input type=\"email\" id=\"email\" name=\"email\" required>\n" +
+                    "                <label>${email_label}</label>\n" +
+                    "                <input type=\"email\" name=\"email\" required>\n" +
                     "            </div>\n" +
                     "            \n" +
                     "            <div class=\"form-group\">\n" +
-                    "                <label for=\"code\">${code_label}</label>\n" +
-                    "                <input type=\"password\" id=\"code\" name=\"code\" required>\n" +
-                    "            </div>\n" +
+                    "                <label>${code_label}</label>\n" +
+                    "                <input type=\"password\" name=\"code\" required>\n" +
+                    "            </极狐" +
                     "            \n" +
                     "            <button type=\"submit\">${submit_button}</button>\n" +
                     "        </form>\n" +
-                    "        <div class=\"info\">\n" +
-                    "            Only emails with allowed suffixes can be registered.\n" +
-                    "        </极狐" +
                     "        <div class=\"footer\">\n" +
                     "            TRWhiteList Plugin v1.0\n" +
                     "        </div>\n" +
