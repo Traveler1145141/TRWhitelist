@@ -1,16 +1,27 @@
 # The secret code to access the web form
-verification-code: "11434"
+verification-code: "yourSecretCode"
 
 # Web server port
 port: 11434
+
+# Allowed email suffixes (e.g. ["@qq.com", "@163.com"])
+# Leave empty to allow all email suffixes
+allowed-email-suffixes:
+  - "@qq.com"
+  - "@163.com"
 
 # Messages used in the plugin and web form
 messages:
   success: "<h1 style='color:green'>Player added successfully!</h1>"
   invalid_code: "<h1 style='color:red'>Invalid verification code!</h1>"
+  email_required: "<h1 style='color:red'>Email is required!</h1>"
+  invalid_email: "<h1 style='color:red'>Invalid email format!</h1>"
+  email_suffix_not_allowed: "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h1>"
+  email_already_registered: "<h1 style='color:red'>This email is already registered!</h1>"
   console_success: "Added {player} to whitelist"
   console_error: "Error adding player {player}: {error}"
   index_title: "TR Minecraft Whitelist Portal"
   username_label: "Minecraft Username"
+  email_label: "Email Address"
   code_label: "Access Code"
   submit_button: "Add to Whitelist"
