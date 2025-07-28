@@ -1,4 +1,10 @@
+# The secret code to access the web form
 verification-code: "11434"
+
+# Web server port
+port: 11434
+
+# Messages used in the plugin and web form
 messages:
   success: "<h1 style='color:green'>Player added successfully!</h1>"
   invalid_code: "<h1 style='color:red'>Invalid verification code!</h1>"
@@ -7,4 +13,4 @@ messages:
   index_title: "TR Minecraft Whitelist Portal"
   username_label: "Minecraft Username"
   code_label: "Access Code"
-  submit_button: "Submit"
+  submit_button: "Add to Whitelist"
