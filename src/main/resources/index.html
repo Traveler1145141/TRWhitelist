@@ -71,6 +71,11 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
+        .info {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #7f8c8d;
+        }
         .footer {
             margin-top: 25px;
             color: #7f8c8d;
@@ -80,20 +85,28 @@
 </head>
 <body>
     <div class="container">
-        <h1>${index_title}</h1>
+        <h1>Whitelist</h1>
         <form method="POST">
             <div class="form-group">
-                <label for="username">Your Minecraft User</label>
+                <label for="username">Minecraft Username</label>
                 <input type="text" id="username" name="username" required>
             </div>
             
             <div class="form-group">
-                <label for="code">${code_label}</label>
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="code">Code</label>
                 <input type="password" id="code" name="code" required>
             </div>
             
-            <button type="submit">${submit_button}</button>
+            <button type="submit">Submit</button>
         </form>
+        <div class="info">
+            Only emails with allowed suffixes can be registered.
+        </div>
         <div class="footer">
             TRWhiteList Plugin v1.0
         </div>
