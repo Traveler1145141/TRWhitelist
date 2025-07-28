@@ -1,20 +1,6 @@
 # Web server port
 port: 11434
 
-# SMTP configuration
-smtp:
-  host: smtp.example.com
-  port: 587
-  username: your-email@example.com
-  authorization-code: "your-authorization-code"  # 建议使用环境变量
-  from: your-email@example.com
-  tls: true
-
-# Verification code settings
-verification-code:
-  length: 6
-  expiry: 300  # 5 minutes
-
 # Allowed email suffixes
 allowed-email-suffixes:
   - "@qq.com"
@@ -35,6 +21,7 @@ messages:
   email_label: "Email Address"
   code_label: "Verification Code"
   submit_button: "Add to Whitelist"
+
 #如果你是中国用户请把上面的message删除，将下面的_cn删掉
 messages_cn:
   success: "<h1 style='color:green'>玩家添加成功!</h1>"
