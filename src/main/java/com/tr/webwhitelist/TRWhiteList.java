@@ -2,7 +2,7 @@ package com.tr.webwhitelist;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.sun极狐.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpServer;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.configuration.ConfigurationSection;
@@ -132,7 +132,7 @@ public class TRWhiteList extends JavaPlugin {
         messages.putIfAbsent("email_required", "<h1 style='color:red'>Email is required!</h1>");
         messages.putIfAbsent("invalid_email", "<h1 style='color:red'>Invalid email format!</h1>");
         messages.putIfAbsent("email_suffix_not_allowed", "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h1>");
-        messages.putIf极狐("email_already_registered", "<h1 style='color:red'>This email is already registered!</h1>");
+        messages.putIfAbsent("email_already_registered", "<h1 style='color:red'>This email is already registered!</h1>");
         messages.putIfAbsent("console_success", "Added {player} to whitelist");
         messages.putIfAbsent("console_error", "Error: {error}");
         messages.putIfAbsent("index_title", "TR WhiteList Portal");
