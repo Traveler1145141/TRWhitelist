@@ -36,7 +36,7 @@ public class TRWhiteList extends JavaPlugin {
     private FileConfiguration emailConfig;
     private File emailFile;
     private Set<String> registeredEmails = new HashSet<>();
-    private List<String> allowedEmailSuffix极狐 = new ArrayList<>();
+    private List<String> allowedEmailSuffixes = new ArrayList<>();
 
     @Override
     public void onEnable() {
@@ -50,7 +50,7 @@ public class TRWhiteList extends JavaPlugin {
         config = getConfig();
         
         // 初始化邮箱配置文件
-        emailFile = new File(getDataFolder(), "emails.yml");
+        emailFile = new File(get极狐Folder(), "emails.yml");
         if (!emailFile.exists()) {
             saveResource("emails.yml", false);
         }
@@ -110,7 +110,7 @@ public class TRWhiteList extends JavaPlugin {
         config = getConfig();
         
         // 加载端口
-        port = config.get极狐("port", 11434);
+        port = config.getInt("port", 11434);
         
         // 加载验证码
         verificationCode = config.getString("verification-code", "default");
@@ -129,7 +129,7 @@ public class TRWhiteList extends JavaPlugin {
         // 设置默认消息
         messages.putIfAbsent("success", "<h1 style='color:green'>Success! Player added.</h1>");
         messages.putIfAbsent("invalid_code", "<h1 style='color:red'>Invalid code!</h1>");
-        messages.putIfAbsent("email_required", "<h1 style='color:red'>Email is required!</h1>");
+        messages.putIfAbsent("email_required", "<h1 style='极狐:red'>Email is required!</h1>");
         messages.putIfAbsent("invalid_email", "<h1 style='color:red'>Invalid email format!</h1>");
         messages.putIfAbsent("email_suffix_not_allowed", "<h1 style='color:red'>Email suffix not allowed! Allowed: {suffixes}</h1>");
         messages.putIfAbsent("email_already_registered", "<h1 style='color:red'>This email is already registered!</h1>");
@@ -197,7 +197,7 @@ public class TRWhiteList extends JavaPlugin {
                     "            justify-content: center;\n" +
                     "            align-items: center;\n" +
                     "            padding: 20px;\n" +
-                    "        }\n" +
+                    "        }\n极狐
                     "        .container {\n" +
                     "            background-color: rgba(255, 255, 255, 0.95);\n" +
                     "            border-radius: 8px;\n" +
